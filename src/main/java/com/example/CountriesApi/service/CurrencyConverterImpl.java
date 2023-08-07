@@ -1,16 +1,17 @@
 package com.example.CountriesApi.service;
 
+import com.example.CountriesApi.controller.CountriesController;
 import com.example.CountriesApi.models.request.CountryReq;
 import com.example.CountriesApi.models.response.CurrencyConversionRate;
-import com.example.CountriesApi.models.response.OriginalResponse;
 import com.example.CountriesApi.models.response.SourceCurrency;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CurrencyConverterImpl {
-
+    Logger logger = LoggerFactory.getLogger(CountriesController.class);
     List<CurrencyConversionRate> conversionRates = new ArrayList<>();
     private void loadConversionRates() {
         try (BufferedReader br = new BufferedReader(new FileReader("/Users/home/Desktop/CountriesApi 2/src/main/java/com/example/CountriesApi/exchange_rate (1).csv"))) {
@@ -46,32 +47,36 @@ public class CurrencyConverterImpl {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<String> sourceCurrencyReqEntity = new HttpEntity<>(country, headers);
+
         CountryReq countryReq = CountryReq.builder().country(country)
                 .build();
-        ResponseEntity<SourceCurrency> responseEntity = restTemplate.postForEntity(url,
-                countryReq,
+        HttpEntity<CountryReq> sourceCurrencyReqEntity = new HttpEntity<>(countryReq, headers);
+
+        ResponseEntity<SourceCurrency> responseEntity = restTemplate.exchange(url,
+               HttpMethod.POST,
+                sourceCurrencyReqEntity,
                 SourceCurrency.class);
 
-            String sourceCurrency = "EUR";
-        // String sourceCurrency = responseEntity.getBody().getData().getCurrency();
-
-        if (sourceCurrency.equals(targetCurrency)) {
-            return amount; // No conversion needed if the source and target currencies are the same.
-        }
-        else{
-            for (CurrencyConversionRate rates : conversionRates) {
-                if (rates.getSourceCurrency().equals(sourceCurrency) && rates.getTargetCurrency().equals(targetCurrency)) {
-                    return rates.getRate() * amount;
+        if (responseEntity.getStatusCode().is2xxSuccessful()) {
+            SourceCurrency sourceCurrency = responseEntity.getBody();
+            if (sourceCurrency != null && sourceCurrency.getData() != null) {
+                String sourceCurrency1 = responseEntity.getBody().getData().getCurrency();
+                  //  String curr = "EUR";
+                if (sourceCurrency1.equals(targetCurrency)) {
+                    return amount;
+                } else {
+                    for (CurrencyConversionRate rates : conversionRates) {
+                        if (rates.getSourceCurrency().equals(sourceCurrency1) && rates.getTargetCurrency().equals(targetCurrency)) {
+                            return rates.getRate() * amount;
+                        }
+                        }
+                    }
                 }
+                return 0.1;
+            } else {
+                return 0.2;
             }
         }
-
-//        double conversionRate = findConversionRate(sourceCurrency, targetCurrency);
-//        return amount * conversionRate;
-
-        return 0; // If no conversion rate is found, return 0.
-    }
 
 
 }

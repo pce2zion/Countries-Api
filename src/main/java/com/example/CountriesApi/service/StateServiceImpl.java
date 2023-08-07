@@ -15,7 +15,7 @@ public class StateServiceImpl {
 
     public OriginalResponseTwo getCountryStatesAndCities(CountryReq countryReq) {
         final String stateUrl = "https://countriesnow.space/api/v0.1/countries/states";
-        final String cityUrl = "https://countriesnow.space/api/v0.1/countries/state/cities";
+        final String cityUrl = "https://countriesnow.space/api/v0.1/countries/cities";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -37,18 +37,17 @@ public class StateServiceImpl {
         if (stateResponseEntity.getStatusCode().is2xxSuccessful()) {
             SingleCountryResponse singleCountryResponse = stateResponseEntity.getBody();
             if (singleCountryResponse != null && singleCountryResponse.getData() != null) {
-                originalResponse.setError(false);
-                originalResponse.setMsg("Success");
-
+                originalResponse.setError(singleCountryResponse.isError());
+                originalResponse.setMsg(singleCountryResponse.getMsg());
 
 
                 for (States state : singleCountryResponse.getData().getStates()) {
-                    CountryReq cityRequest = new CountryReq();
-                    cityRequest.setCountry(countryReq.getCountry());
-                    cityRequest.setState(countryReq.getState());
+//                    CountryReq cityRequest = new CountryReq();
+//                    cityRequest.setCountry(countryReq.getCountry());
+//                    cityRequest.setState(countryReq.getState());
                     originalResponse.getData().add(state);
-
-                    HttpEntity<CountryReq> cityRequestEntity = new HttpEntity<>(cityRequest, headers);
+                }
+                    HttpEntity<CountryReq> cityRequestEntity = new HttpEntity<>(countryReq, headers);
 
                     ResponseEntity<StateCityResponse> cityResponseEntity = restTemplate.exchange(
                             cityUrl,
@@ -65,15 +64,15 @@ public class StateServiceImpl {
                             }
                         }
                     } else {
-                        // Handle error if necessary.
+                        originalResponse.setError(true);
+                        originalResponse.setMsg("Bade request");
                     }
-                }
+               // }
             } else {
                 originalResponse.setError(true);
                 originalResponse.setMsg("No states found for the given country");
             }
         } else {
-            // Handle error if necessary.
             originalResponse.setError(false);
             originalResponse.setMsg("Failed to fetch data from the API");
         }

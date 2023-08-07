@@ -12,5 +12,5 @@ import java.io.Serializable;
 @Setter
 public class CountryReq implements Serializable {
     private String country;
-    private String state;
+
 }

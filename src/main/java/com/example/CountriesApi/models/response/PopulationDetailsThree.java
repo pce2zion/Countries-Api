@@ -8,7 +8,7 @@ import lombok.*;
 @Getter
 @Setter
 @ToString
-public class PopulationDetailsTwo {
+public class PopulationDetailsThree {
         private String year;
         private String value;
 }
